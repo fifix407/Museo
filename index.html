@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Museo de la Antigua Grecia y Roma — Recorrido Virtual</title>
+  <meta name="description"
+    content="Un recorrido virtual inmersivo por un museo de la Antigua Grecia y Roma. Explora esculturas y piezas históricas en un entorno 3D interactivo." />
+
+  <!-- Google Fonts: Cinzel (headings) + Cormorant Garamond (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCROLL SPACER — creates the scrollable area
+       Adjust height to control total scroll length
+  ═══════════════════════════════════════════════════════ -->
+  <div id="scroll-spacer"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       THREE.JS CANVAS — fixed behind all overlays
+  ═══════════════════════════════════════════════════════ -->
+  <canvas id="museum-canvas"></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════
+       VIGNETTE — cinematic darkened edges
+  ═══════════════════════════════════════════════════════ -->
+  <div id="vignette" aria-hidden="true"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       LOADING SCREEN
+  ═══════════════════════════════════════════════════════ -->
+  <div id="loading-screen">
+    <div class="loader-content">
+      <div class="loader-ornament">✦</div>
+      <h2 class="loader-title">MUSEO VIRTUAL</h2>
+      <div class="loader-bar-track">
+        <div class="loader-bar-fill"></div>
+      </div>
+      <p class="loader-subtitle">Preparando el recorrido…</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TITLE OVERLAY — fades out as user scrolls
+  ═══════════════════════════════════════════════════════ -->
+  <div id="title-overlay">
+    <div class="title-ornament-top">⧁ ── ✶ ── ⧁</div>
+    <h1 id="main-title">ANTIGUA GRECIA<br /><span>&amp;</span><br />ROMA</h1>
+    <p class="title-subtitle">Un recorrido virtual por la historia</p>
+    <div class="title-ornament-bottom">⧁ ── ✶ ── ⧁</div>
+    <div class="scroll-hint">
+      <span>Usá las teclas S / ↓ para avanzar</span>
+    </div>
+  </div>
+  <div id="panel-1" class="info-panel panel-right" aria-hidden="true"></div>
+  <div id="panel-2" class="info-panel panel-left"  aria-hidden="true"></div>
+  <div id="panel-3" class="info-panel panel-right" aria-hidden="true"></div>
+  <div id="panel-4" class="info-panel panel-left"  aria-hidden="true"></div>
+  <div id="panel-5" class="info-panel panel-right" aria-hidden="true"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       UI DUAL — Tarjeta ESTATUA (derecha) + Tarjeta CUADRO (izquierda)
+       Rellenadas dinámicamente por renderStationUI() en main.js
+  ═══════════════════════════════════════════════════════ -->
+
+  <!-- Tarjeta ESTATUA — derecha de pantalla -->
+  <div id="station-panel-sculpture" class="station-panel station-panel--right">
+    <div class="sp-border"></div>
+    <div class="sp-content">
+      <div class="sp-header">
+        <span class="sp-tipo">&#9651; ESCULTURA</span>
+        <span class="sp-numero">1 / 5</span>
+      </div>
+      <div class="sp-divider"></div>
+      <h2 class="sp-titulo">Cargando…</h2>
+      <p class="sp-fecha"></p>
+      <p class="sp-desc"></p>
+    </div>
+  </div>
+
+  <!-- Tarjeta CUADRO — izquierda de pantalla -->
+  <div id="station-panel-painting" class="station-panel station-panel--left">
+    <div class="sp-border"></div>
+    <div class="sp-content">
+      <div class="sp-header">
+        <span class="sp-tipo">&#9633; PINTURA</span>
+      </div>
+      <div class="sp-divider"></div>
+      <h2 class="sp-titulo">Cargando…</h2>
+      <p class="sp-fecha"></p>
+      <p class="sp-desc"></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAV CONTROLES — Anterior / Siguiente + indicador de puntos
+  ═══════════════════════════════════════════════════════ -->
+  <nav id="station-nav" aria-label="Navegación de estaciones">
+    <button id="btn-station-prev" class="nav-btn" title="Estación anterior (W / &uarr;)">&#10094;</button>
+
+    <div id="station-nav-indicator" role="tablist" aria-label="Estaciones">
+      <button class="nav-dot active" role="tab" aria-label="Estación 1"></button>
+      <button class="nav-dot" role="tab" aria-label="Estación 2"></button>
+      <button class="nav-dot" role="tab" aria-label="Estación 3"></button>
+      <button class="nav-dot" role="tab" aria-label="Estación 4"></button>
+      <button class="nav-dot" role="tab" aria-label="Estación 5"></button>
+      <button class="nav-dot" role="tab" aria-label="Estación 6 — Maquetas"></button>
+    </div>
+
+    <button id="btn-station-next" class="nav-btn" title="Siguiente estación (S / &darr;)">&#10095;</button>
+  </nav>
+
+  <!-- Controles mira izq/der (mantenidos) -->
+  <div id="look-controls">
+    <button id="btn-look-left"  class="look-btn">❮</button>
+    <button id="btn-look-right" class="look-btn">❯</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       INDEX MENU — Top right corner (Strategy Pattern Fetch)
+  ═══════════════════════════════════════════════════════ -->
+  <div id="index-menu">
+    <div class="index-header">EXPLORAR COLECCIÓN</div>
+    <div class="index-buttons">
+      <button id="btn-filter-pintura" class="index-btn">&#9633; PINTURAS</button>
+      <button id="btn-filter-escultura" class="index-btn">&#9651; ESCULTURAS</button>
+    </div>
+    <ul id="index-list">
+      <li class="index-empty">Seleccioná una categoría...</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PROGRESS BAR — bottom of screen
+  ═══════════════════════════════════════════════════════ -->
+  <div id="progress-container">
+    <div id="progress-bar"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCRIPTS — Three.js (ES Modules) + GSAP + main logic
+  ═══════════════════════════════════════════════════════ -->
+
+  <!-- Import maps polyfill -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      const el = document.querySelector('.loader-subtitle');
+      if (el) el.innerText = 'JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+    });
+    window.addEventListener("unhandledrejection", function (e) {
+      const el = document.querySelector('.loader-subtitle');
+      if (el) el.innerText = 'Promise Error: ' + e.reason;
+    });
+  </script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script type="module" src="main.js"></script>
+
+</body>
+
+</html>
